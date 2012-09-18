@@ -1,6 +1,6 @@
 
 /*
-	gcc -o test ik.cpp -lm
+	gcc -o test 4dofik.cpp -lm
 	./test
 */
 
@@ -8,10 +8,10 @@
 #include <stdio.h>
 #include <math.h>
 
-#define COXA_LENGTH    46.0
-#define FEMUR_LENGTH   70.0
-#define TIBIA_LENGTH   68.0
-#define TARSUS_LENGTH  83.0
+#define COXA_LENGTH   46.0
+#define FEMUR_LENGTH  70.0
+#define TIBIA_LENGTH  68.0
+#define TARSUS_LENGTH 83.0
 
 struct angles
 {
@@ -30,11 +30,12 @@ void ik(double x, double y, double z)
 	double tarsus_offset_z;
 	double theta;
 	double side_a, side_b, side_c;
+	double side_a_sqr, side_b_sqr, side_c_sqr;
 	double angle_a, angle_b, angle_c;
 	double temp1, temp2;
 
 	// Magnitude of the leg length along the ground from the coxa axis to the tip of the foot in the XY plane
-	leg_length = sqrt(x*x + y*y);
+	leg_length = sqrt(x * x + y * y);
 	
 	// Tarsus Offsets
 	tarsus_offset_angle = 0.0; // 0.0 for now. will revisit later.
@@ -42,23 +43,29 @@ void ik(double x, double y, double z)
 	tarsus_offset_z = cos(tarsus_offset_angle) * TARSUS_LENGTH;
 	
 	// Triangle formed by the femur, tibia and tarsus joints. Using the law of cosines to calculate all sides lengths and angles.
-	temp1 = leg_length-COXA_LENGTH-tarsus_offset_xy;
-	temp2 = z+tarsus_offset_z;
+	temp1 = leg_length - COXA_LENGTH - tarsus_offset_xy;
+	temp2 = z + tarsus_offset_z;
+	
 	side_a = FEMUR_LENGTH;
 	side_b = TIBIA_LENGTH;
-	side_c = sqrt(temp1*temp1+temp2*temp2);	
-	angle_a = acos((-side_a*side_a+side_b*side_b+side_c*side_c)/(2*side_b*side_c)) * (180.0/3.14);
-	angle_b = acos(( side_a*side_a-side_b*side_b+side_c*side_c)/(2*side_a*side_c)) * (180.0/3.14);
-	angle_c = acos(( side_a*side_a+side_b*side_b-side_c*side_c)/(2*side_a*side_b)) * (180.0/3.14);
+	side_c = sqrt(temp1 * temp1 + temp2 * temp2);
+	
+	side_a_sqr = side_a * side_a;
+	side_b_sqr = side_b * side_b;
+	side_c_sqr = side_c * side_c;
+	
+	angle_a = acos((-side_a_sqr + side_b_sqr + side_c_sqr) / (2 * side_b * side_c)) * 57.32;
+	angle_b = acos(( side_a_sqr - side_b_sqr + side_c_sqr) / (2 * side_a * side_c)) * 57.32;
+	angle_c = acos(( side_a_sqr + side_b_sqr - side_c_sqr) / (2 * side_a * side_b)) * 57.32;
 	
 	// Angle of line between the femur and Tarsus joints with respect to ground
-	theta = atan2(temp2,temp1) * (180.0/3.14);
+	theta = atan2(temp2, temp1) * 57.32;
 	
 	// Resulting joint angles
-	result.coxa   = atan2(x,y) * (180.0/3.145);
-	result.femur  = 90.0-theta-angle_b;
-	result.tibia  = 90.0-angle_c;
-	result.tarsus = tarsus_offset_angle+result.femur-result.tibia;
+	result.coxa   = atan2(x,y) * 57.32;
+	result.femur  = 90.0 - theta-angle_b;
+	result.tibia  = 90.0 - angle_c;
+	result.tarsus = tarsus_offset_angle - result.femur - result.tibia;
 	
 	// Print stuff!
 	printf("\n");
@@ -82,6 +89,6 @@ void ik(double x, double y, double z)
 
 int main(void)
 {
-	ik(70.0, 70.0, -50.0);
+	ik(90.0, 90.0, -50.0);
 	return(0);
 }
